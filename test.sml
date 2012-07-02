@@ -5,33 +5,42 @@ structure Test = struct
   in
 
   val prog_edge = 
-    [R{prem = [Atom("edge",[Var "X", Var "Y"])],
+    [R{name = "redge",
+       prem = [Atom("edge",[Var "X", Var "Y"])],
        conc = [Atom("path",[Var "X", Var "Y"])]},
-     R{prem = [Atom("edge",[Var "X", Var "Y"]),
+     R{name = "redgepath",
+       prem = [Atom("edge",[Var "X", Var "Y"]),
                Atom("path",[Var "Y", Var "Z"])],
        conc = [Atom("path",[Var "X", Var "Z"])]}]
 
   val prog_edge_symm = 
-    [R{prem = [Atom("edge",[Var "X", Var "Y"])],
+    [R{name = "ree",
+       prem = [Atom("edge",[Var "X", Var "Y"])],
        conc = [Atom("edge",[Var "Y", Var "X"])]},
-     R{prem = [Atom("edge",[Var "X", Var "Y"])],
+     R{name = "rep",
+       prem = [Atom("edge",[Var "X", Var "Y"])],
        conc = [Atom("path",[Var "X", Var "Y"])]},
-     R{prem = [Atom("edge",[Var "X", Var "Y"]),
+     R{name = "repp",
+       prem = [Atom("edge",[Var "X", Var "Y"]),
                Atom("path",[Var "Y", Var "Z"])],
        conc = [Atom("path",[Var "X", Var "Z"])]}]
    
   val prog_path = 
-    [R{prem = [Atom("path",[Var "X", Var "Y"])],
+    [R{name = "symm",
+       prem = [Atom("path",[Var "X", Var "Y"])],
        conc = [Atom("path",[Var "Y", Var "X"])]},
-     R{prem = [Atom("path",[Var "X", Var "Y"]),
+     R{name = "trans",
+       prem = [Atom("path",[Var "X", Var "Y"]),
                Atom("path",[Var "Y", Var "Z"])],
        conc = [Atom("path",[Var "X", Var "Z"])]}]
    
   val prog_cky = 
-    [R{prem = [Atom("unary",[Var "X", Var "C"]),
+    [R{name = "r/unary",
+       prem = [Atom("unary",[Var "X", Var "C"]),
                Atom("char",[Var "C", Var "I"])],
        conc = [Atom("string",[Var "X", Var "I", Atom("s",[Var "I"])])]},
-     R{prem = [Atom("binary",[Var "X", Var "Y", Var "Z"]),
+     R{name = "r/binary",
+       prem = [Atom("binary",[Var "X", Var "Y", Var "Z"]),
                Atom("string",[Var "Y", Var "I", Var "J"]),
                Atom("string",[Var "Z", Var "J", Var "K"])],
        conc = [Atom("string",[Var "X", Var "I", Var "K"])]}]

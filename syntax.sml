@@ -8,7 +8,7 @@ structure Syntax = struct
   | Atom of string * term list
 
   datatype rule = 
-    R of {prem : term list, conc : term list}
+    R of {name : string, prem : term list, conc : term list}
 
   type prog = rule list
 
@@ -25,7 +25,8 @@ structure Syntax = struct
     | Atom(x,tms) => 
       x ^ "(" ^ String.concatWith ", " (map to_string tms) ^ ")"
       
-  fun rule_to_string (R{prem, conc}) = 
+  fun rule_to_string (R{name, prem, conc}) = 
+    name ^ ": " ^
     String.concatWith ", " (map to_string prem) ^ " => " ^
     String.concatWith ", " (map to_string conc)    
 

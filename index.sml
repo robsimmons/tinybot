@@ -6,9 +6,16 @@ signature INDEX = sig
   type 'a table 
 
   datatype 'a rightmatch = 
-      RM of {rule : int, premise : int, subst : Subst.subst, data : 'a}
+      RM of {rule : int * string, 
+             premise : int,
+             subst : Subst.subst, 
+             data : 'a}
+
   datatype 'a leftmatch = 
-      LM of {rule : int, premise : int, subst : Subst.subst, data : 'a list}  
+      LM of {rule : int * string, 
+             premise : int,
+             subst : Subst.subst, 
+             data : 'a list}  
 
   val new : Syntax.rule list -> 'a table
 
@@ -36,27 +43,34 @@ structure Index :> INDEX = struct
   open Subst
 
   datatype 'a rightmatch = 
-      RM of {rule : int, premise : int, subst : subst, data : 'a}
-  datatype 'a leftmatch = 
-      LM of {rule : int, premise : int, subst : subst, data : 'a list}
+      RM of {rule : int * string, 
+             premise : int,
+             subst : Subst.subst, 
+             data : 'a}
 
-  datatype key = K of {rule : int, premise : int, subst : subst}
+  datatype 'a leftmatch = 
+      LM of {rule : int * string, 
+             premise : int,
+             subst : Subst.subst, 
+             data : 'a list}  
+
+  datatype key = K of {rule : int * string, premise : int, subst : subst}
   fun compare (K{rule, premise, subst}, K{rule=r2, premise=p2, subst=s2}) =
-    case (Int.compare (rule, r2), Int.compare (premise, p2)) of
+    case (Int.compare (#1 rule, #1 r2), Int.compare (premise, p2)) of
       (EQUAL, EQUAL) => Subst.compare (subst, s2)
     | (EQUAL, ord) => ord
     | (ord, _) => ord
     
   fun key_to_string (K{rule, premise, subst}) =
-    Int.toString rule ^ "-" ^ Int.toString premise ^ " " ^ 
+    #2 rule ^ "-" ^ Int.toString premise ^ " " ^ 
     Subst.to_string subst
 
   fun rm_to_string (RM{rule, premise, subst, ...}) =
-    Int.toString rule ^ "-" ^ Int.toString premise ^ " " ^ 
+    #2 rule ^ "-" ^ Int.toString premise ^ " " ^ 
     Subst.to_string subst
 
   fun lm_to_string (LM{rule, premise, subst, ...}) =
-    Int.toString rule ^ "-" ^ Int.toString premise ^ " " ^ 
+    #2 rule ^ "-" ^ Int.toString premise ^ " " ^ 
     Subst.to_string subst
             
 
@@ -81,7 +95,7 @@ structure Index :> INDEX = struct
       end
 
   fun generate_substs [] = []
-    | generate_substs (R{prem, conc} :: rules) =
+    | generate_substs (R{name, prem, conc} :: rules) =
       generate_indices (SetS.empty, prem) :: generate_substs rules
 
   (* Turn a list of list into a vector of vectors *)
@@ -139,14 +153,14 @@ structure Index :> INDEX = struct
     let in
       (* print ("KL "^Int.toString rule^"-"^Int.toString premise^"\n"); *)
       K{rule = rule, premise = premise, 
-        subst = filter substs (rule, premise, subst)}
+        subst = filter substs (#1 rule, premise, subst)}
     end
 
   fun key_right (substs, RM{rule, premise, subst, data}) = 
     let in
       (* print ("KR "^Int.toString rule^"-"^Int.toString premise^"\n"); *)
       K{rule = rule, premise = premise, 
-        subst = filter substs (rule, premise, subst)}
+        subst = filter substs (#1 rule, premise, subst)}
     end
 
   fun lookup_right (T{substs, right, ...}, rm) = 

@@ -72,12 +72,13 @@ structure Exec = struct
           print "\n"
         end
 
-      fun init 0 = ()
-        | init n = 
-          let val n = n-1 in
+      fun init (n, []) = ()
+        | init (n, R{name, ...} :: rules) = 
+          let in
             insert_left 
-                (index, LM{rule=n, premise=0, subst=Subst.empty, data=[]}); 
-            init n
+                (index, LM{rule=(n,name), premise=0, subst=Subst.empty, 
+                           data=[]}); 
+            init (n+1, rules)
           end
 
       fun finish conc (LM{subst, ...}) =
@@ -86,14 +87,14 @@ structure Exec = struct
       (* Comes up with all immediate consequences of a specific match. *)
       fun apply (M{rule, premise, subst}) =
         let 
-          val R{prem, conc} = List.nth (rules, rule)
+          val R{name, prem, conc} = List.nth (rules, rule)
           val num_premises = length prem
           fun rapply (lm as LM{premise, subst, ...}) = 
             if premise = num_premises then finish conc lm
             else (insert_left (index, lm);
                   app rapply (map (advance_lr lm) (lookup_left (index, lm))))
 
-          val rm = RM{rule=rule, premise=premise, subst=subst, data=()}
+          val rm = RM{rule=(rule, name), premise=premise, subst=subst, data=()}
         in
           insert_right (index, rm);
           app rapply (map (advance_rl rm) (lookup_right (index, rm)))
@@ -115,7 +116,7 @@ structure Exec = struct
           end
 
     in
-      init (length rules);
+      init (0, rules);
       print_state ();
       loop ()
     end
