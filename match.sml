@@ -13,7 +13,7 @@
 
 signature MATCH = sig
 
-  datatype match = M of {rule : int, premise : int, subst : Subst.subst}
+  datatype match = M of {rule : string, premise : int, subst : Subst.subst}
   
   val match : Syntax.prog -> Term.term -> match list
 
@@ -23,7 +23,7 @@ structure Match :> MATCH = struct
 
   open Syntax
 
-  datatype match = M of {rule : int, premise : int, subst : Subst.subst}
+  datatype match = M of {rule : string, premise : int, subst : Subst.subst}
     
   fun match (rules : rule list) : Term.term -> match list = 
     let
@@ -56,14 +56,14 @@ structure Match :> MATCH = struct
           match_rule (r, p+1, prems, M{rule=r, premise=p, subst=s} :: matches)
 
       (* Collect all matches *)
-      fun match_rules (r, [], matches) term = matches
-        | match_rules (r, R{prem,...} :: rules, matches) term = 
+      fun match_rules ([], matches) term = matches
+        | match_rules (R{name, prem,...} :: rules, matches) term = 
           let 
             val matched_prems = map (match_premise term) prem
-            val matches = match_rule (r, 0, matched_prems, matches)
-          in match_rules (r+1, rules, matches) term end
+            val matches = match_rule (name, 0, matched_prems, matches)
+          in match_rules (rules, matches) term end
     in
-      match_rules(0, rules, [])
+      match_rules(rules, [])
     end
 
 end

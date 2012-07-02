@@ -1,4 +1,4 @@
-(* Fact Queue *)
+(* Fact Queue/worklist *)
 
 structure Queue :> sig
 

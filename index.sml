@@ -6,13 +6,13 @@ signature INDEX = sig
   type 'a table 
 
   datatype 'a rightmatch = 
-      RM of {rule : int * string, 
+      RM of {rule : string, 
              premise : int,
              subst : Subst.subst, 
              data : 'a}
 
   datatype 'a leftmatch = 
-      LM of {rule : int * string, 
+      LM of {rule : string, 
              premise : int,
              subst : Subst.subst, 
              data : 'a list}  
@@ -43,34 +43,34 @@ structure Index :> INDEX = struct
   open Subst
 
   datatype 'a rightmatch = 
-      RM of {rule : int * string, 
+      RM of {rule : string, 
              premise : int,
              subst : Subst.subst, 
              data : 'a}
 
   datatype 'a leftmatch = 
-      LM of {rule : int * string, 
+      LM of {rule : string, 
              premise : int,
              subst : Subst.subst, 
              data : 'a list}  
 
-  datatype key = K of {rule : int * string, premise : int, subst : subst}
+  datatype key = K of {rule : string, premise : int, subst : subst}
   fun compare (K{rule, premise, subst}, K{rule=r2, premise=p2, subst=s2}) =
-    case (Int.compare (#1 rule, #1 r2), Int.compare (premise, p2)) of
+    case (String.compare (rule, r2), Int.compare (premise, p2)) of
       (EQUAL, EQUAL) => Subst.compare (subst, s2)
     | (EQUAL, ord) => ord
     | (ord, _) => ord
     
   fun key_to_string (K{rule, premise, subst}) =
-    #2 rule ^ "-" ^ Int.toString premise ^ " " ^ 
+    rule ^ "-" ^ Int.toString premise ^ " " ^ 
     Subst.to_string subst
 
   fun rm_to_string (RM{rule, premise, subst, ...}) =
-    #2 rule ^ "-" ^ Int.toString premise ^ " " ^ 
+    rule ^ "-" ^ Int.toString premise ^ " " ^ 
     Subst.to_string subst
 
   fun lm_to_string (LM{rule, premise, subst, ...}) =
-    #2 rule ^ "-" ^ Int.toString premise ^ " " ^ 
+    rule ^ "-" ^ Int.toString premise ^ " " ^ 
     Subst.to_string subst
             
 
@@ -81,7 +81,7 @@ structure Index :> INDEX = struct
     case MapK.find (map, key) of SOME x => x | NONE => []
 
   datatype 'a table = 
-      T of {substs : SetS.set vector vector, 
+      T of {substs : SetS.set vector MapS.map, 
             left : ('a rightmatch list) MapK.map ref,
             right : ('a leftmatch list) MapK.map ref}
 
@@ -94,12 +94,13 @@ structure Index :> INDEX = struct
         generate_indices (SetS.union (fv, fvs), prems)
       end
 
-  fun generate_substs [] = []
+  fun generate_substs [] = MapS.empty
     | generate_substs (R{name, prem, conc} :: rules) =
-      generate_indices (SetS.empty, prem) :: generate_substs rules
+      MapS.insert (generate_substs rules, name,  
+                   generate_indices (SetS.empty, prem))
 
-  (* Turn a list of list into a vector of vectors *)
-  val vectorify = fn array => Vector.fromList(map Vector.fromList array)
+  (* Turn a MapS of lists into a MapS of vectors *)
+  fun vectorify map = MapS.map Vector.fromList map
 
   fun print_substs substs = 
     let 
@@ -146,21 +147,21 @@ structure Index :> INDEX = struct
   (* Strips out the non-index-relevant parts of a substitution *)
   fun filter substs (rule, premise, subst) = 
     let in
-      Subst.filter (Vector.sub (Vector.sub (substs, rule), premise)) subst
+      Subst.filter (Vector.sub (MapS.lookup (substs, rule), premise)) subst
     end
 
   fun key_left (substs, LM{rule, premise, subst, data}) = 
     let in
       (* print ("KL "^Int.toString rule^"-"^Int.toString premise^"\n"); *)
       K{rule = rule, premise = premise, 
-        subst = filter substs (#1 rule, premise, subst)}
+        subst = filter substs (rule, premise, subst)}
     end
 
   fun key_right (substs, RM{rule, premise, subst, data}) = 
     let in
       (* print ("KR "^Int.toString rule^"-"^Int.toString premise^"\n"); *)
       K{rule = rule, premise = premise, 
-        subst = filter substs (#1 rule, premise, subst)}
+        subst = filter substs (rule, premise, subst)}
     end
 
   fun lookup_right (T{substs, right, ...}, rm) = 

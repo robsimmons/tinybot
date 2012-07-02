@@ -83,12 +83,12 @@ structure Exec = struct
           print "\n"
         end
 
-      fun init 0 = ()
-        | init n = 
-          let val n = n-1 in
+      fun init [] = ()
+        | init (R{name, ...} :: rules) = 
+          let in
             insert_left 
-                (index, LM{rule=n, premise=0, subst=Subst.empty, data=[]}); 
-            init n
+                (index, LM{rule=name, premise=0, subst=Subst.empty, data=[]}); 
+            init rules
           end
 
       fun listmax [] = 0
@@ -100,7 +100,8 @@ structure Exec = struct
       (* Comes up with all immediate consequences of a specific match. *)
       fun apply depth (M{rule, premise, subst}) =
         let 
-          val R{prem, conc} = List.nth (rules, rule)
+          val R{name, prem, conc} = 
+             valOf (List.find (fn (R{name, ...}) => name = rule) rules)
           val num_premises = length prem
           fun rapply (lm as LM{premise, subst, ...}) = 
             if premise = num_premises then finish conc lm
@@ -129,7 +130,7 @@ structure Exec = struct
           end
 
     in
-      init (length rules);
+      init rules;
       print_state ();
       loop ()
     end
