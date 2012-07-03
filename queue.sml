@@ -8,11 +8,14 @@ structure Queue :> sig
    val insert : queue -> Term.term -> unit
    val pop : int option -> queue -> Term.term option
    val print : queue -> unit
+   val size : queue -> int
 
 end = struct
   
    type queue = ((int * Term.term) list * int) ref
    type t = queue
+
+   fun size (ref (facts, _)) = length facts
 
    fun new () = ref ([], 1)
 

@@ -69,6 +69,13 @@ structure Exec = struct
           print "\n"
         end 
 
+      fun report_queuesize () = 
+      let val queuesize = Queue.size queue
+      in print ("@@@ " ^ Int.toString queuesize ^ 
+                " item" ^ (if queuesize = 1 then "" else "s") ^ 
+                " now on the queue\n")
+      end
+
     
       (* Asserts a fact, adding it to the queue if appropriate *)
       fun assert fact = 
@@ -147,14 +154,14 @@ structure Exec = struct
         in
           if there_is_some_linear_stuff_in_this_rule
           then 
-           (print (Subst.to_string subst ^ " success! (linearity)\n");
+           (print (Subst.to_string subst ^ " success of linear rule!\n");
             Success new_facts)
           else if all_of_the_premises_are_already_in_the_database
           then 
            (print (Subst.to_string subst ^ " complete, but redundant.\n");
             Failure)
           else 
-           (print (Subst.to_string subst ^ " success! (new facts)\n");
+           (print (Subst.to_string subst ^ " success of persistent rule!\n");
             Success new_facts)
         end
 
@@ -241,10 +248,20 @@ structure Exec = struct
 
 
       (* The innermost loop that consumes things off the workqueue. *)
-      fun inner_loop () = 
-       (print_state ();
-        print "\n(press Enter to take a step)\n";
-        ignore (TextIO.inputLine TextIO.stdIn);
+      fun print_state_then_prompt () = 
+        (print_state ();
+         print "\n>>> Press enter to take a step:";
+         ignore (TextIO.inputLine TextIO.stdIn))
+
+      fun main_loop () = 
+       (print "\n>>> Show internal state of data structures? (y/N): ";
+        (case TextIO.inputLine TextIO.stdIn of 
+            SOME "Y\n" => print_state_then_prompt ()
+          | SOME "y\n" => print_state_then_prompt ()
+          | SOME "yes\n" => print_state_then_prompt ()
+          | SOME "YES\n" => print_state_then_prompt ()
+          | SOME "Yes\n" => print_state_then_prompt ()
+          | _ => ());
         case Queue.pop NONE queue of
            NONE => (* Try to perform a rule application *)
            let
@@ -253,8 +270,12 @@ structure Exec = struct
            in
               print ("@@@ Queue empty, attempting to apply some rule!\n");
               case attempt_rule_application reordered_rules of 
-                 NONE => print ("\nQUIESCENCE. Done!\n\n")
-               | SOME newfacts => (List.app assert newfacts; inner_loop ())
+                 NONE => print ("\n@@@ QUIESCENCE. Done!\n\n")
+               | SOME newfacts => 
+                   (List.app assert newfacts; 
+                    print "\n";
+                    report_queuesize ();
+                    main_loop ())
            end
 
          | SOME fact => (* Add the new fact to the indexing structure *)
@@ -268,6 +289,7 @@ structure Exec = struct
                      (if num_matches = 1 
                       then "1 match"
                       else Int.toString num_matches ^ " matches") ^ ")\n");
+              report_queuesize ();
 
               (* Record each match in the indexing structure (as a
                * "right match"). *)
@@ -280,11 +302,11 @@ structure Exec = struct
                  matches;
               
               (* Then keep going *)
-              inner_loop ()
+              main_loop ()
            end)
     in
        List.app assert facts;
-       inner_loop ()
+       main_loop ()
     end
 
     val execute = lin_execute SetS.empty
