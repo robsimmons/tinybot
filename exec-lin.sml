@@ -1,6 +1,25 @@
 
+(* Simple O(n log n) randomization algorithm *)
 structure RandomizeList = struct
-  fun randomize list = list (* Totally bogus! *)
+  local 
+    val myrand: (unit -> word) ref = ref (Rand.mkRandom 0wxBEEF)
+  in
+  fun init () = 
+    myrand := 
+      Rand.mkRandom (Word.fromLargeInt (Time.toMilliseconds (Time.now ())))
+
+  fun randomize (list: 'a list): 'a list =
+    let
+      val map = 
+        List.foldr
+          (fn (item, map) => MapW.insert(map, !myrand (), item))
+          MapW.empty
+          list
+    in
+      MapW.listItems map
+    end
+
+  end
 end
 
 structure Exec = struct
@@ -17,6 +36,7 @@ structure Exec = struct
     let
       datatype perm = LINEAR of int | PERSISTENT
 
+      val () = RandomizeList.init ()
       val match = Match.match rules
       val index = Index.new rules
       val table: perm TermTable.t = TermTable.table 0
@@ -158,9 +178,8 @@ structure Exec = struct
              (* This is more hackish than it should be: the point here
               * is that some of the possible extensions may involve
               * facts that we've actually exhausted (they are linear
-              * and there are no copies left) and we want to make sure
-              * not to call extend_substitution_tree with those
-              * extensions. *)
+              * and there are no copies left) and we want to not to 
+              * call extend_substitution_tree with those extensions. *)
              val filtered_extensions = 
                 List.mapPartial
                    (fn (LM {data = [], ...}) => raise Fail "filter invariant"

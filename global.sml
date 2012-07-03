@@ -12,6 +12,9 @@ RedBlackSetFn(struct type ord_key = int val compare = Int.compare end)
 structure MapI = 
 RedBlackMapFn(struct type ord_key = int val compare = Int.compare end)
 
+structure MapW = 
+RedBlackMapFn(struct type ord_key = word val compare = Word.compare end)
+
 structure Global = struct
 
   fun assert a = if a() then () else raise Fail "Invariant"
