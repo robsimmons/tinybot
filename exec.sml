@@ -61,7 +61,6 @@ structure Exec = struct
       val advance_rl = fn rm => fn lm => advance (lm, rm)
       val advance_lr = fn lm => fn rm => advance (lm, rm)
       val index = new rules
-      val prems = map (fn R{prem,...} => length prem) rules
       val facts = Facts.new facts
 
       val print_state = fn () => 

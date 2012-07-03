@@ -2,16 +2,19 @@
 
 structure Queue :> sig
 
-   type facts
-   val new : Term.term list -> facts
-   val insert : facts -> Term.term -> unit
-   val pop : int option -> facts -> Term.term option
+   type queue
+   type t = queue
+   val new : unit -> queue
+   val insert : queue -> Term.term -> unit
+   val pop : int option -> queue -> Term.term option
+   val print : queue -> unit
 
 end = struct
   
-   type facts = ((int * Term.term) list * int) ref
+   type queue = ((int * Term.term) list * int) ref
+   type t = queue
 
-   fun new tms = ref ([], 621413)
+   fun new () = ref ([], 1)
 
    fun insert (facts as ref (queue, n)) tm =
       let 
@@ -32,5 +35,12 @@ end = struct
       let val (tm, queue') = do_pop x queue
       in facts := (queue', n); tm 
       end
+
+   val print =
+      fn (ref (queue, _)) =>
+        List.app (fn (n, tm) =>
+                    print ("  " ^ Term.to_string tm ^
+                           " (" ^ Int.toString n ^ ")\n")) 
+           queue
 
 end

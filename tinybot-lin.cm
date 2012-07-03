@@ -1,0 +1,18 @@
+Group is
+  $/basis.cm
+  $/smlnj-lib.cm 
+
+  global.sml
+
+  syntax.sml (* Rules *)
+  term.sml   (* Ground terms *)
+  subst.sml  (* Ground substitutions *)
+  match.sml  (* Matching ground terms *)
+  index.sml  (* Indexing substitutions *)
+
+  queue.sml  (* Imperative workqueue *)
+  termtable.sml (* Term-indexed tables *)
+  exec-lin.sml  (* Execution *)
+
+  test.sml
+  test-lin.sml
