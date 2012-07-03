@@ -20,22 +20,22 @@ through the process of proof search. There are three implementations:
 The test/demo/example file [test.sml][4] is loaded by all the
 configuration files; the tests in that file can be run like this:
 
-'''
+```
 $ git clone git://github.com/robsimmons/tinybot.git
 $ cd tinybot
 $ sml -m tinybot-simple.cm # or one of the other two
 - Test.test1 ();
-'''
+```
 
 The test/demo/example file for linearity [test-lin.sml][5] is loaded
 only by tinybot-lin.cm; it can be run like this:
 
-'''
+```
 $ git clone git://github.com/robsimmons/tinybot.git
 $ cd tinybot
 $ sml -m tinybot-lin.cm
 - LinTest.test0 ();
-'''
+```
 
 [1]: https://github.com/robsimmons/tinybot/blob/master/tinybot-simple.cm
 [2]: https://github.com/robsimmons/tinybot/blob/master/tinybot-trackdepth.cm
