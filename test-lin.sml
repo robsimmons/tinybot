@@ -19,6 +19,20 @@ structure LinTest = struct
        prem = [Atom("a2",[])],
        conc = [Atom("b2",[])]}]
 
+  val prog_spantree = 
+    [R{name = "r/symm",
+       prem = [Atom("edge",[Var "X", Var "Y"])],
+       conc = [Atom("edge",[Var "Y", Var "X"])]},
+     R{name = "r/start",
+       prem = [Atom("vertex",[Atom("a",[])])],
+       conc = [Atom("intree",[Atom("a",[])])]},
+     R{name = "r/extend",
+       prem = [Atom("edge",[Var "X", Var "Y"]),
+               Atom("intree",[Var "X"]),
+               Atom("vertex",[Var "Y"])],
+       conc = [Atom("intree",[Var "Y"]),
+               Atom("tree",[Var "X", Var "Y"])]}]
+
   end
 
   local
@@ -32,11 +46,27 @@ structure LinTest = struct
      Atom'("a0", []),
      Atom'("a0", [])]
 
+  val edge1 =
+    [Atom'("edge", [Atom'("a",[]), Atom'("b",[])]),
+     Atom'("edge", [Atom'("a",[]), Atom'("c",[])]),
+     Atom'("edge", [Atom'("a",[]), Atom'("d",[])]),
+     Atom'("edge", [Atom'("b",[]), Atom'("c",[])]),
+     Atom'("edge", [Atom'("b",[]), Atom'("e",[])]),
+     Atom'("edge", [Atom'("d",[]), Atom'("e",[])]),
+     Atom'("vertex", [Atom'("a",[])]),
+     Atom'("vertex", [Atom'("b",[])]),
+     Atom'("vertex", [Atom'("c",[])]),
+     Atom'("vertex", [Atom'("d",[])]),
+     Atom'("vertex", [Atom'("e",[])])]
   end
 
-  val linpreds = 
-     List.foldl SetS.add' SetS.empty ["a0", "a1", "a2", "b1", "b2", "c1"] 
+  fun linpreds list = List.foldl SetS.add' SetS.empty list
 
-  fun test0 () = Exec.lin_execute linpreds prog_conflict f0
+  fun test0 () = 
+     Exec.lin_execute (linpreds ["a0", "a1", "a2", "b1", "b2", "c1"]) 
+       prog_conflict f0
 
+  fun test1 () = 
+     Exec.lin_execute (linpreds ["vertex"])
+       prog_spantree edge1
 end
