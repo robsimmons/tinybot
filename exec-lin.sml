@@ -32,22 +32,23 @@ structure Exec = struct
   datatype leftmatch = 
      datatype Index.leftmatch (* LM{rule,premise,subst,data} *)
   
-  fun lin_execute linear_predicates rules facts = 
-    let
-      datatype perm = LINEAR of int | PERSISTENT
+  datatype perm = LINEAR of int | PERSISTENT
 
+  fun lin_execute interactive linear_predicates rules facts = 
+    let
       val () = RandomizeList.init ()
       val match = Match.match rules
       val index = Index.new rules
       val table: perm TermTable.t = TermTable.table 0
       val queue = Queue.new ()
+      val print = if interactive then print else (fn _ => ())
 
       (* Lookup a rule by name in the list of rules *)
       fun lookup rule = 
          valOf (List.find (fn (R{name,...}) => name = rule) rules)
 
       (* Reports the state *)
-      val print_state = fn () =>
+      val print_state = fn () => if not interactive then () else 
         let in
           print "\nSUBSTITUTION INDEXING STRUCTURE";
           print "\n===============================\n";
@@ -248,13 +249,14 @@ structure Exec = struct
 
 
       (* The innermost loop that consumes things off the workqueue. *)
-      fun print_state_then_prompt () = 
+      fun print_state_then_prompt () = if not interactive then () else
         (print_state ();
          print "\n>>> Press enter to take a step:";
          ignore (TextIO.inputLine TextIO.stdIn))
 
       fun main_loop () = 
        (print "\n>>> Show internal state of data structures? (y/N): ";
+        if not interactive then () else 
         (case TextIO.inputLine TextIO.stdIn of 
             SOME "Y\n" => print_state_then_prompt ()
           | SOME "y\n" => print_state_then_prompt ()
@@ -306,9 +308,10 @@ structure Exec = struct
            end)
     in
        List.app assert facts;
-       main_loop ()
+       main_loop ();
+       table
     end
 
-    val execute = lin_execute SetS.empty
+    val execute = lin_execute true SetS.empty
 
 end

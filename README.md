@@ -34,7 +34,7 @@ only by tinybot-lin.cm; it can be run like this:
 $ git clone git://github.com/robsimmons/tinybot.git
 $ cd tinybot
 $ sml -m tinybot-lin.cm
-- LinTest.test0 ();
+- LinTest.test0 true;
 ```
 
 [1]: https://github.com/robsimmons/tinybot/blob/master/tinybot-simple.cm

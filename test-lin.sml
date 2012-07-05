@@ -62,11 +62,11 @@ structure LinTest = struct
 
   fun linpreds list = List.foldl SetS.add' SetS.empty list
 
-  fun test0 () = 
-     Exec.lin_execute (linpreds ["a0", "a1", "a2", "b1", "b2", "c1"]) 
+  fun test0 b = 
+     Exec.lin_execute b (linpreds ["a0", "a1", "a2", "b1", "b2", "c1"]) 
        prog_conflict f0
 
-  fun test1 () = 
-     Exec.lin_execute (linpreds ["vertex"])
+  fun test1 b = 
+     Exec.lin_execute b (linpreds ["vertex"])
        prog_spantree edge1
 end
