@@ -99,25 +99,30 @@ structure Exec = struct
       
       (* Checks whether a fact in the database has available copies *)
       fun available fact = 
-         case TermTable.lookup table fact of
-            LINEAR 0 => false
-          | LINEAR _ => true
-          | PERSISTENT => true
+         case TermTable.find table fact of
+            NONE => false
+          | SOME (LINEAR 0) => false
+          | SOME (LINEAR _) => true
+          | SOME PERSISTENT => true
          
       (* Decrements the number of available copies of a resource *)
       fun decr fact = 
-         ignore
+      let exception NothingLeft
+      in ignore
             (TermTable.operate table fact
                 (fn () => raise Fail "Decrementing untracked fact?!")
                 (fn LINEAR 0 => raise Fail "Decrementing unavailable fact"
+                  | LINEAR 1 => raise NothingLeft
                   | LINEAR n => LINEAR (n-1)
                   | PERSISTENT => PERSISTENT))
+       handle NothingLeft => TermTable.remove table fact
+      end
 
       (* Increments the number of available copies of a resource *) 
       fun incr fact = 
          ignore
             (TermTable.operate table fact
-                (fn () => raise Fail "Incrementing untracked fact?!")
+                (fn () => LINEAR 1)
                 (fn LINEAR n => LINEAR (n+1)
                   | PERSISTENT => PERSISTENT))
 
