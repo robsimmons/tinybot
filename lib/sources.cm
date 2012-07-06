@@ -2,8 +2,19 @@ Library
   signature ORDERED
   signature DICT
   functor SplayDict
+  structure JenkinsHash
+  structure StringHashable
+  structure GrowArray
 is
+  $/basis.cm
+
   splay-tree.sml
   dict.sig
   ordered.sig
   dict-splay.sml
+  hash-inc.sig
+  hash-inc.sml
+  hashable.sig
+  hashable.sml
+  growarray.sig
+  growarray.sml

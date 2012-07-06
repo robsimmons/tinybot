@@ -6,7 +6,8 @@ Group is
   global.sml
 
   syntax.sml (* Rules *)
-  term.sml   (* Ground terms *)
+  term.sig
+  term-hashcons.sml   (* Ground terms *)
   subst.sml  (* Ground substitutions *)
   match.sml  (* Matching ground terms *)
   index.sml  (* Indexing substitutions *)

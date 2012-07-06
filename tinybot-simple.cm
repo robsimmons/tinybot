@@ -5,6 +5,7 @@ Group is
   global.sml
 
   syntax.sml (* Rules *)
+  term.sig
   term.sml   (* Ground terms *)
   subst.sml  (* Ground substitutions *)
   match.sml  (* Matching ground terms *)
