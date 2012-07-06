@@ -198,6 +198,7 @@ structure Index :> INDEX = struct
         val _ = Global.assert (fn () => rL = rR andalso pL = pR)
         val subst = Subst.merge (sL, sR)
         val data = dR :: dL (* Warning! This is backwards, I guess *)
+                     (* The linear algorithm depends on this order... *)
       in LM{rule = rL, premise = pL + 1, subst = subst, data = data} end
 
 
