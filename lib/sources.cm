@@ -1,0 +1,9 @@
+Library
+  signature ORDERED
+  signature DICT
+  functor SplayDict
+is
+  splay-tree.sml
+  dict.sig
+  ordered.sig
+  dict-splay.sml

@@ -14,42 +14,28 @@ structure TermTable:> sig
 
 end = struct
 
+   structure Dict = SplayDict(structure Key = Term)
+
    type key = Term.term 
-   type 'a table = (key * 'a) list ref
+   type 'a table = 'a Dict.t ref
    type 'a t = 'a table
    exception Absent
   
-   fun table n = ref []
+   fun table n = ref Dict.empty
 
-   fun reset tabl n = tabl := []
+   fun reset tabl n = tabl := Dict.empty
    
-   fun do_find key [] = NONE
-     | do_find key ((tm, v) :: pairs) =
-          if Term.eq (key, tm) 
-          then SOME v else do_find key pairs
+   fun find (ref dict) key = Dict.find dict key
 
-   fun find (ref pairs) key = do_find key pairs
+   fun member (ref dict) key = Dict.member dict key
 
-   fun member tabl key = 
-      case find tabl key of NONE => false | SOME _ => true
+   fun lookup (ref dict) key = Dict.lookup dict key
 
-   fun lookup tabl key = 
-      case find tabl key of NONE => raise Absent | SOME v => v
-
-   fun app f (ref pairs) = List.app f pairs
-
-   fun do_operate key ifnew ifthere [] =
-          let val v' = ifnew () 
-          in (NONE, v', [(key, v')]) end
-     | do_operate key ifnew ifthere ((tm, v) :: pairs) = 
-          if Term.eq (key, tm)
-          then let val v' = ifthere v 
-               in (SOME v, v', ((tm, v') :: pairs)) end
-          else let val (oldv, newv, pairs) = do_operate key ifnew ifthere pairs
-               in (oldv, newv, (tm, v) :: pairs) end
+   fun app f (ref dict) = Dict.app f dict
 
    fun operate tabl tm ifnew ifthere = 
-      let val (oldv, newv, pairs) = do_operate tm ifnew ifthere (!tabl)
-      in tabl := pairs; (oldv, newv) end
+   let val (old, new, dict) = Dict.operate (!tabl) tm ifnew ifthere
+   in tabl := dict; (old, new) 
+   end
 
 end

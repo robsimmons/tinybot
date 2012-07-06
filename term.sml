@@ -11,6 +11,7 @@
 signature TERM = sig
   
   type term 
+  type t = term
   datatype term_rep =  Atom of string * term list
   val inj : term_rep -> term
   val prj : term -> term_rep
@@ -26,6 +27,7 @@ structure Term :> TERM = struct
   datatype term_rep = 
     Atom of string * term list
   and term = R of term_rep
+  type t = term
 
   val prj = fn (R x) => x
   val inj = fn x => (R x)
