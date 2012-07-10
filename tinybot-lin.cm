@@ -15,6 +15,10 @@ Group is
   queue.sml  (* Imperative workqueue *)
   termtable.sml (* Term-indexed tables *)
   exec-lin.sml  (* Execution *)
+  
+  Timing.sig
+  Timing.sml
+  Timers.sig
+  Timers.sml
 
-  test.sml
-  test-lin.sml
+  test-gen.sml

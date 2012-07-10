@@ -8,7 +8,7 @@ structure RandomizeList = struct
     myrand := 
       Rand.mkRandom (Word.fromLargeInt (Time.toMilliseconds (Time.now ())))
 
-  fun randomize (list: 'a list): 'a list =
+(*  fun randomize (list: 'a list): 'a list =
     let
       val map = 
         List.foldr
@@ -18,7 +18,9 @@ structure RandomizeList = struct
     in
       MapW.listItems map
     end
+*)
 
+   fun randomize (list: 'a list): 'a list = list
   end
 end
 
