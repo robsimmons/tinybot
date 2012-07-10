@@ -39,7 +39,7 @@ structure Exec = struct
       val () = RandomizeList.init ()
       val match = Match.match rules
       val index = Index.new rules
-      val table: perm TermTable.t = TermTable.table 0
+      val table: (perm * bool ref) TermTable.t = TermTable.table 0
       val queue = Queue.new ()
       val print = if interactive then print else (fn _ => ())
 
@@ -59,11 +59,11 @@ structure Exec = struct
           print "\nDATABASE";
           print "\n========\n";
           TermTable.app 
-             (fn (term, PERSISTENT) => print (Term.to_string term ^ " pers\n")
-               | (term, LINEAR 0) => () 
-               | (term, LINEAR 1) => 
+             (fn (term, (PERSISTENT, _)) =>
+                    print (Term.to_string term ^ " pers\n")
+               | (term, (LINEAR 1, _)) => 
                    print (Term.to_string term ^ " lin (1 copy)\n")
-               | (term, LINEAR n) =>
+               | (term, (LINEAR n, _)) =>
                    print (Term.to_string term ^ " lin (" ^ Int.toString n ^
                           " copies)\n"))
              table;
@@ -85,48 +85,55 @@ structure Exec = struct
                 (* If the key's not in the database, put it in, lin or pers,
                  * and definitely add it to the queue. *)
                 (fn () =>
-                 let val Term.Atom (a, _) = Term.prj fact
+                 let
+                    val r = ref true 
+                    val Term.Atom (a, _) = Term.prj fact
                  in 
-                    Queue.insert queue fact; 
+                    Queue.insert queue (fact, r); 
                     if SetS.member (linear_predicates, a)
-                    then LINEAR 1
-                    else PERSISTENT
+                    then (LINEAR 1, r)
+                    else (PERSISTENT, r)
                  end)
 
-                (fn LINEAR n => LINEAR (n+1)
-                  | PERSISTENT => PERSISTENT))
+                (fn (LINEAR n, r) => (LINEAR (n+1), r)
+                  | (PERSISTENT, r) => (PERSISTENT, r)))
 
       
       (* Checks whether a fact in the database has available copies *)
       fun available fact = 
          case TermTable.find table fact of
             NONE => false
-          | SOME (LINEAR 0) => false
-          | SOME (LINEAR _) => true
-          | SOME PERSISTENT => true
+          | SOME (LINEAR _, _) => true
+          | SOME (PERSISTENT, _) => true
          
       (* Decrements the number of available copies of a resource *)
       fun decr fact = 
-      let exception NothingLeft
-      in ignore
+      let exception NothingLeft 
+      in 
+       ( ignore
             (TermTable.operate table fact
                 (fn () => raise Fail "Decrementing untracked fact?!")
-                (fn LINEAR 0 => raise Fail "Decrementing unavailable fact"
-                  | LINEAR 1 => raise NothingLeft
-                  | LINEAR n => LINEAR (n-1)
-                  | PERSISTENT => PERSISTENT))
-       handle NothingLeft => TermTable.remove table fact
+                (fn (LINEAR 0, r) => raise NothingLeft
+                  | (LINEAR n, r) => (LINEAR (n-1), r)
+                  | (PERSISTENT, r) => (PERSISTENT, r)))
+       ; true)
+       handle NothingLeft => false
       end
 
       (* Increments the number of available copies of a resource *) 
       fun incr fact = 
          ignore
             (TermTable.operate table fact
-                (fn () => LINEAR 1)
-                (fn LINEAR n => LINEAR (n+1)
-                  | PERSISTENT => PERSISTENT))
-
-      
+                (fn () => (LINEAR 1, ref true))
+                (fn (LINEAR n, r) => (LINEAR (n+1), r)
+                  | (PERSISTENT, r) => (PERSISTENT, r)))
+ 
+      fun commit [] = ()
+        | commit (fact :: facts) =
+           ( case TermTable.find table fact of
+                SOME (LINEAR 0, r) => (TermTable.remove table fact; r := false)
+              | _ => ()
+           ; commit facts)
 
 
       (* Exploring any subtree of a rule's substitution tree leads to
@@ -161,6 +168,7 @@ structure Exec = struct
           if there_is_some_linear_stuff_in_this_rule
           then 
            (print (Subst.to_string subst ^ " success of linear rule!\n");
+            commit data; (* May remove consumed facts from indices *)
             Success new_facts)
           else if all_of_the_premises_are_already_in_the_database
           then 
@@ -168,6 +176,7 @@ structure Exec = struct
             Failure)
           else 
            (print (Subst.to_string subst ^ " success of persistent rule!\n");
+            commit data; (* May remove consumed facts from indices *)
             Success new_facts)
         end
 
@@ -185,7 +194,8 @@ structure Exec = struct
            let 
              (* Use the indexing structure to find all the matching facts *)
              val possible_extensions = 
-               map (fn rightmatch => Index.advance (leftmatch, rightmatch))
+               Stream.map 
+                 (fn rightmatch => Index.advance (leftmatch, rightmatch))
                  (Index.lookup_left (index, leftmatch))
 
              (* This is more hackish than it should be: the point here
@@ -194,23 +204,20 @@ structure Exec = struct
               * and there are no copies left) and we want to not to 
               * call extend_substitution_tree with those extensions. *)
              val filtered_extensions = 
-                List.mapPartial
+                Stream.mapPartial
                    (fn (LM {data = [], ...}) => raise Fail "filter invariant"
                      | (leftmatch as LM {data = fact :: _, ...}) => 
                           if not (available fact) then NONE
                           else SOME (fact, leftmatch))
                    possible_extensions 
-
-             (* Make tree traversal fair *)
-             val extensions = RandomizeList.randomize filtered_extensions
            in
-             if null extensions
+             if Stream.null filtered_extensions
              then (let val LM {subst, premise, ...} = leftmatch 
                    in print (Subst.to_string subst ^ " fails (can't extend \
                              \to premise #" ^ Int.toString (premise+1) ^ ")\n");
                       Failure
                    end)
-             else extend_substitution_tree num_prems extensions 
+             else extend_substitution_tree num_prems filtered_extensions 
            end
 
       (* extend_substitution_tree
@@ -222,18 +229,18 @@ structure Exec = struct
        * (consuming a fact and then calling explore_substitution_tree
        * again). If the sub-exploration fails, we undo the
        * consumption. *)
-      and extend_substitution_tree num_prems [] = Failure
-        | extend_substitution_tree num_prems ((fact, leftmatch) :: extensions) =
-            (decr fact; (* Consume this fact for now. *)
-             case explore_substitution_tree num_prems leftmatch of 
-                Success new_facts =>
-                   Success new_facts (* Fact stays consumed. *)
-              | Failure => 
-                  (incr fact; (* Undo fact consumption. *)
-                   extend_substitution_tree num_prems extensions))
+      and extend_substitution_tree num_prems extensions = 
+         case Stream.front extensions of
+            Stream.Nil => Failure
+          | Stream.Cons ((fact, leftmatch), extensions) =>
+             ( decr fact (* Consume this fact for now. *)
+             ; case explore_substitution_tree num_prems leftmatch of 
+                  Success new_facts =>
+                     Success new_facts (* Fact stays consumed. *)
+               | Failure => 
+                  ( incr fact (* Undo fact consumption. *)
+                  ; extend_substitution_tree num_prems extensions))
                  
-             
-
       (* Attempt to apply a rule, any rule. *)
       fun attempt_rule_application [] = NONE
         | attempt_rule_application (R{name, prem, ...} :: rules) =
@@ -285,7 +292,7 @@ structure Exec = struct
                     main_loop ())
            end
 
-         | SOME fact => (* Add the new fact to the indexing structure *)
+         | SOME (fact, r) => (* Add the new fact to the indexing structure *)
            let
               (* We have a fact! Find every place in the program that
                * this fact matches. *)
@@ -305,7 +312,8 @@ structure Exec = struct
                        (index, RM{rule = rule,
                                   premise = premise,
                                   subst = subst,
-                                  data = fact}))
+                                  data = fact},
+                        r))
                  matches;
               
               (* Then keep going *)
