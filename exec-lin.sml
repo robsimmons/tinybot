@@ -43,6 +43,7 @@ structure Exec = struct
       val index = Index.new rules
       val table: (perm * bool ref) TermTable.t = TermTable.table 0
       val queue = Queue.new ()
+      val print_force = print
       val print = if interactive then print else (fn _ => ())
 
       (* Lookup a rule by name in the list of rules *)
@@ -50,26 +51,27 @@ structure Exec = struct
          valOf (List.find (fn (R{name,...}) => name = rule) rules)
 
       (* Reports the state *)
-      val print_state = fn () => if not interactive then () else 
+      val print_state = fn force => 
+        if not force andalso not interactive then () else 
         let in
-          print "\nSUBSTITUTION INDEXING STRUCTURE";
-          print "\n===============================\n";
+          print_force "\nSUBSTITUTION INDEXING STRUCTURE";
+          print_force "\n===============================\n";
           Index.print_table index;
-          print "\nWORK QUEUE";
-          print "\n==========\n";
+          print_force "\nWORK QUEUE";
+          print_force "\n==========\n";
           Queue.print queue;
-          print "\nDATABASE";
-          print "\n========\n";
+          print_force "\nDATABASE";
+          print_force "\n========\n";
           TermTable.app 
              (fn (term, (PERSISTENT, _)) =>
-                    print (Term.to_string term ^ " pers\n")
+                    print_force (Term.to_string term ^ " pers\n")
                | (term, (LINEAR 1, _)) => 
-                   print (Term.to_string term ^ " lin (1 copy)\n")
+                   print_force (Term.to_string term ^ " lin (1 copy)\n")
                | (term, (LINEAR n, _)) =>
-                   print (Term.to_string term ^ " lin (" ^ Int.toString n ^
-                          " copies)\n"))
+                   print_force (Term.to_string term ^ " lin (" ^
+                                Int.toString n ^ " copies)\n"))
              table;
-          print "\n"
+          print_force "\n"
         end 
 
       fun report_queuesize () = 
@@ -264,7 +266,7 @@ structure Exec = struct
 
       (* The innermost loop that consumes things off the workqueue. *)
       fun print_state_then_prompt () = if not interactive then () else
-        (print_state ();
+        (print_state false;
          print "\n>>> Press enter to take a step:";
          ignore (TextIO.inputLine TextIO.stdIn))
 
@@ -286,7 +288,8 @@ structure Exec = struct
            in
               print ("@@@ Queue empty, attempting to apply some rule!\n");
               case attempt_rule_application reordered_rules of 
-                 NONE => print ("\n@@@ QUIESCENCE. Done!\n\n")
+                 NONE => (print ("\n@@@ QUIESCENCE. Done!\n\n"); 
+                          print_state true)
                | SOME newfacts => 
                    (List.app assert newfacts; 
                     print "\n";

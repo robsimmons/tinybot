@@ -20,6 +20,5 @@ Group is
   Timing.sml
   Timers.sig
   Timers.sml
-(*
+
   test-gen.sml
-*)

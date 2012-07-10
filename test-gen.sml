@@ -54,14 +54,14 @@ structure GenTest = struct
   fun test2 b n =
     let
        val prog =  [R{name = "rule",
-                prem = [Atom("a",[Var "X"])],
-       		conc = [Atom("a",[Atom ("s", [Var "X"])])]}]
+                prem = [Atom("a",[Atom ("s", [Var "X"])])],
+       		conc = [Atom("a",[Var "X"])]}]
  
        fun intToTerm 0 = mkAtom' "z"
          | intToTerm n = Term.Atom' ("s", [intToTerm (n-1)])
     
        
-       val ctx = [ Term.Atom' ("s", [intToTerm n])]
+       val ctx = [ Term.Atom' ("a", [intToTerm n])]
     in	 
       (Timers.time Timers.solving(fn () => Exec.lin_execute b (linpreds ["a"]) prog ctx) (); Timers.show ())
     end
