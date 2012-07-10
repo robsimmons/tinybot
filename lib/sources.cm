@@ -5,8 +5,13 @@ Library
   structure JenkinsHash
   structure StringHashable
   structure GrowArray
+  structure Stream
+  structure FairTree
+  structure Time
+  structure Rand
 is
   $/basis.cm
+  $/smlnj-lib.cm
 
   splay-tree.sml
   dict.sig
@@ -18,3 +23,6 @@ is
   hashable.sml
   growarray.sig
   growarray.sml
+  stream.sig
+  stream.sml
+  fairtree.sml

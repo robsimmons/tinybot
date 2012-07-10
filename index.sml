@@ -21,10 +21,10 @@ signature INDEX = sig
 
   (* Lookup all the matching {left, right} matches for a {right, left} match *)
   val lookup_right : 'a table * 'a rightmatch -> 'a leftmatch list
-  val lookup_left  : 'a table * 'a leftmatch  -> 'a rightmatch list
+  val lookup_left  : 'a table * 'a leftmatch  -> 'a rightmatch Stream.stream
 
   (* Insert a new match into the table *)
-  val insert_right : 'a table * 'a rightmatch -> unit
+  val insert_right : 'a table * 'a rightmatch * bool ref -> unit
   val insert_left  : 'a table * 'a leftmatch  -> unit
 
   (* Advance - takes a leftmatch and a rightmatch for the nth premise 
@@ -80,9 +80,12 @@ structure Index :> INDEX = struct
   fun mapfind (map, key) =
     case MapK.find (map, key) of SOME x => x | NONE => []
 
+  fun treefind (map, key) = 
+    case MapK.find (map, key) of SOME x => x | NONE => FairTree.empty
+
   datatype 'a table = 
       T of {substs : SetS.set vector MapS.map, 
-            left : ('a rightmatch list) MapK.map ref,
+            left : ('a rightmatch FairTree.t) MapK.map ref,
             right : ('a leftmatch list) MapK.map ref}
 
   (* Generation of index substitutions *)
@@ -129,7 +132,14 @@ structure Index :> INDEX = struct
       MapK.appi
          (fn (k,rms) => 
              (print (key_to_string k ^ "\n");
-              List.app (fn rm => print ("  " ^ rm_to_string rm ^ "\n")) rms))
+              FairTree.app 
+                 (fn (rm, true, d) =>
+                     print ("                  "^rm_to_string rm^" (depth "
+                            ^Int.toString d^")\n")
+                   | (rm, false, d) =>
+                     print (" XXX INVALIDATED: "^rm_to_string rm^" (depth "
+                            ^Int.toString d^")\n")) 
+                 rms))
          left;
       print "Right -> left index:\n";
       MapK.appi
@@ -173,15 +183,16 @@ structure Index :> INDEX = struct
   fun lookup_left  (T{substs, left, ...}, lm) = 
     let in
       (* print "Look "; *)
-      mapfind (!left, key_left (substs, lm))
+      FairTree.traverse (treefind (!left, key_left (substs, lm)))
     end
 
-  fun insert_right (T{substs, left, ...}, rm) = 
+  fun insert_right (T{substs, left, ...}, rm, revoke) = 
     let 
       (* val _ = print "Ins  " *)
       val key = key_right (substs, rm) 
+      val tree = treefind (!left, key)
     in
-      left := MapK.insert (!left, key, rm :: mapfind (!left, key)) 
+      left := MapK.insert (!left, key, FairTree.insert tree (rm, revoke))
     end
 
   fun insert_left (T{substs, right, ...}, lm) = 
