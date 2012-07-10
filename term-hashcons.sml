@@ -27,7 +27,9 @@ structure Term :> TERM = struct
         case MapW.find (!lookup_hash, hash) of NONE => [] | SOME cand => cand
 
   in
-     case List.find (fn (tm', i) => tm = tm') existing of
+     case List.find (fn (tm', i) => 
+                       if tm = tm' then true
+                       else (print ("COLLISION\n"); false)) existing of
         NONE => 
         let val this = !next
         in
